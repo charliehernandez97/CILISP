@@ -1,6 +1,8 @@
 %{
     #include "ciLisp.h"
     #define ylog(r, p) {fprintf(flex_bison_log_file, "BISON: %s ::= %s \n", #r, #p); fflush(stdout);}
+    int yylex();
+    void yyerror(char*);
 %}
 
 %union {
