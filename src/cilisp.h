@@ -9,6 +9,11 @@
 #include <stdbool.h>
 #include "parser.h"
 
+/**
+* Name: Charlie Hernandez
+* Lab: CILISP Project
+* Date: 11/9/2020
+**/
 
 #define NAN_RET_VAL (RET_VAL){DOUBLE_TYPE, NAN}
 #define ZERO_RET_VAL (RET_VAL){INT_TYPE, 0}

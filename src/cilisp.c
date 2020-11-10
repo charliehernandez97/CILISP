@@ -4,6 +4,11 @@
 #define RED             "\033[31m"
 #define RESET_COLOR     "\033[0m"
 
+/**
+* Name: Charlie Hernandez
+* Lab: CILISP Project
+* Date: 11/9/2020
+**/
 // yyerror:
 // Something went so wrong that the whole program should crash.
 // You should basically never call this unless an allocation fails.

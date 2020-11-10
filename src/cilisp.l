@@ -2,6 +2,7 @@
 %option noinput
 %option nounput
 
+
 %{
     #include "cilisp.h"
     #define llog(token) {fprintf(flex_bison_log_file, "LEX: %s \"%s\"\n", #token, yytext); fflush(stdout);}

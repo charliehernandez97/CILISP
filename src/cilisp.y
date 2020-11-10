@@ -9,7 +9,7 @@
     double dval;
     int ival;
     struct ast_node *astNode;
-};
+}
 
 %token <ival> FUNC
 %token <dval> INT DOUBLE
