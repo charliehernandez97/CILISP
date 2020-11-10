@@ -29,6 +29,19 @@ typedef enum func_type {
     NEG_FUNC,
     ABS_FUNC,
     ADD_FUNC,
+    SUB_FUNC,
+    MULT_FUNC,
+    DIV_FUNC,
+    REM_FUNC,
+    EXP_FUNC,
+    EXP2_FUNC,
+    POW_FUNC,
+    LOG_FUNC,
+    SQRT_FUNC,
+    CBRT_FUNC,
+    HYPOT_FUNC,
+    MAX_FUNC,
+    MIN_FUNC,
     // TODO complete the enum
     CUSTOM_FUNC
 } FUNC_TYPE;
@@ -76,7 +89,7 @@ typedef struct ast_node {
 AST_NODE *createNumberNode(double value, NUM_TYPE type);
 AST_NODE *createFunctionNode(FUNC_TYPE func, AST_NODE *opList);
 AST_NODE *addExpressionToList(AST_NODE *newExpr, AST_NODE *exprList);
-
+RET_VAL evalFuncNode(AST_NODE *node);
 RET_VAL eval(AST_NODE *node);
 
 void printRetVal(RET_VAL val);

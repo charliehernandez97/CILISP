@@ -3,12 +3,16 @@
 %option nounput
 
 %{
-    #include "ciLisp.h"
+    #include "cilisp.h"
     #define llog(token) {fprintf(flex_bison_log_file, "LEX: %s \"%s\"\n", #token, yytext); fflush(stdout);}
 %}
 
-digit [0-9]
-int [+-]?{digit}+
+digit   [0-9]
+int     [+-]?{digit}+
+double  [+-]?{digit}+\.{digit}*
+quit    "quit"
+
+func        "neg"|"abs"|"exp"|"log"|"sqrt"|"add"|"sub"|"mult"|"div"|"remainder"|"exp"|"exp2"|"pow"|"log"|"sqrt"|"cbrt"|"hypot"|"max"|"min"
 
 %%
 
@@ -16,6 +20,18 @@ int [+-]?{digit}+
     llog(INT);
     yylval.dval = strtod(yytext, NULL);
     return INT;
+}
+
+{double} {
+    llog(DOUBLE)
+    yylval.dval = strtod(yytext, NULL);
+    return DOUBLE;
+}
+
+{func} {
+    llog(FUNC);
+    yylval.ival = resolveFunc(yytext);
+    return FUNC;
 }
 
 [\n] {
@@ -27,6 +43,21 @@ int [+-]?{digit}+
     llog(EOFT);
     return EOFT;
     }
+
+{quit} {
+    llog(QUIT);
+    return QUIT;
+}
+
+\( {
+    llog(LPAREN);
+    return LPAREN;
+}
+
+\) {
+    llog(RPAREN);
+    return RPAREN;
+}
 
 [ \t\r] ; /* skip whitespace */
 
@@ -40,7 +71,6 @@ int [+-]?{digit}+
 // Edit at your own risk.
 
 #include <stdio.h>
-#include "ciLisp.h"
 #include "yyreadprint.c"
 
 int main(int argc, char **argv)

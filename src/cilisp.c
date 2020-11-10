@@ -1,4 +1,5 @@
 #include "cilisp.h"
+#include "math.h"
 
 #define RED             "\033[31m"
 #define RESET_COLOR     "\033[0m"
@@ -56,6 +57,21 @@ FUNC_TYPE resolveFunc(char *funcName)
             "neg",
             "abs",
             "add",
+            "sub",
+            "mult",
+            "div",
+            "remainder",
+            "exp",
+            "exp2",
+            "pow",
+            "log",
+            "sqrt",
+            "cbrt",
+            "hypot",
+            "max",
+            "min",
+            "custom",
+
             // TODO complete the array
             // the empty string below must remain the last element
             ""
@@ -84,9 +100,13 @@ AST_NODE *createNumberNode(double value, NUM_TYPE type)
         exit(1);
     }
 
-    // TODO complete the function
+    // TODO complete the function - done
     // Populate "node", the AST_NODE * created above with the argument data.
     // node is a generic AST_NODE, don't forget to specify it is of type NUMBER_NODE
+    node->data.number.value = value;
+    node->data.number.type = type;
+    node->type = NUM_NODE_TYPE;
+    //printf("%f\n", node->data.number.value);
 
     return node;
 }
@@ -104,11 +124,419 @@ AST_NODE *createFunctionNode(FUNC_TYPE func, AST_NODE *opList)
         exit(1);
     }
 
-    // TODO complete the function
+    // TODO complete the function - done
     // Populate the allocated AST_NODE *node's data
+    node->type = FUNC_NODE_TYPE;
+    node->data.function.func = func;
+    node->data.function.opList = opList;
 
     return node;
 }
+
+AST_NODE *addExpressionToList(AST_NODE *newExpr, AST_NODE *exprList)
+{
+
+    newExpr->next = exprList;
+    return newExpr;
+}
+
+RET_VAL *evalNeg(AST_NODE *node)
+{
+    if(!node)
+    {
+        warning("No operands in Neg function");
+        return &NAN_RET_VAL;
+    }
+    else if(node->next)
+    {
+        warning("neg called with extra (ignored) operands!");
+    }
+
+    RET_VAL *result = malloc(sizeof(RET_VAL));
+    result->value = -node->data.number.value;
+    result->type = node->data.number.type;
+    return result;
+
+}
+
+RET_VAL *evalAbs(AST_NODE *node)
+{
+
+    if(!node)
+    {
+        warning("No operands in Neg function");
+        return &NAN_RET_VAL;
+    }
+    else if(node->next)
+    {
+        warning("Too many operands in Abs function");
+
+    }
+    RET_VAL *result = malloc(sizeof(RET_VAL));
+    result->value = fabs(node->data.number.value);
+    result->type = node->data.number.type;
+    return result;
+}
+
+RET_VAL *evalAdd(AST_NODE *node)
+{
+    RET_VAL *result = malloc(sizeof(RET_VAL));
+    RET_VAL *result2 = malloc(sizeof(RET_VAL));
+    result->value = 0;
+
+    if(node == NULL)
+    {
+        warning("WARNING: No operands detected");
+        //result->value = 0;
+        result->type = INT_TYPE;
+        return result;
+    }
+
+
+    while(node != NULL)
+    {
+        *result2 = eval(node);
+
+        result->value += result2->value;
+        result->type = result2->type || result->type;
+        //printf("add %f", node->data.number.value);
+        node = node->next;
+    }
+
+    return result;
+}
+
+
+RET_VAL *evalSub(AST_NODE *node)
+{
+    RET_VAL *result = malloc(sizeof(RET_VAL));
+    RET_VAL *result2= malloc(sizeof(RET_VAL));
+    if(!node)
+    {
+        warning("No operands in Sub function");
+        return &NAN_RET_VAL;
+    }
+    else if(!node->next)
+    {
+        warning("WARNING: Sub called with only one arg!");
+        return &NAN_RET_VAL;
+    }
+    else if(node->next->next)
+    {
+        warning("Sub called with extra (ignored) operands!");
+    }
+
+    *result = eval(node);
+    *result2 = eval(node->next);
+    result->value -= result2->value;
+    result->type = result->type || result2->type;
+    return result;
+
+
+
+}
+
+// TODO - DEBUGGING REQUIRED - DOES NOT PRINT RIGHT NUM_TYPE IN SPECIFIC CIRCUMSTANCES
+RET_VAL *evalMult(AST_NODE *node)
+{
+    RET_VAL *result = malloc(sizeof(RET_VAL));
+    RET_VAL *result2 = malloc(sizeof(RET_VAL));
+
+    result->value = 1;
+
+    if(node == NULL)
+    {
+        warning("WARNING: No operands detected");
+        result->type = INT_TYPE;
+        return result;
+    }
+
+    //result->type = node->data.number.type || node->next->data.number.type;
+    while(node != NULL)
+    {
+        *result2 = eval(node);
+
+        result->value *= result2->value;
+        result->type = result2->type || result->type;
+        //printf("add %f", node->data.number.value);
+        node = node->next;
+
+        //printf("add %f", node->data.number.value);
+    }
+    return result;
+}
+
+RET_VAL *evalDiv(AST_NODE *node)
+{
+    RET_VAL *result = malloc(sizeof(RET_VAL));
+    RET_VAL *result2 = malloc(sizeof(RET_VAL));
+
+    if(!node)
+    {
+        warning("No operands in div function");
+        return &NAN_RET_VAL;
+    }
+    else if(!node->next)
+    {
+        warning("WARNING: div called with only one arg!");
+        return &NAN_RET_VAL;
+    }
+    else if(node->next->next)
+    {
+        warning("Sub called with extra (ignored) operands!");
+    }
+
+    if(node->next->data.number.value == 0)
+    {
+        warning("You cannot divide by zero!");
+        return &NAN_RET_VAL;
+    }
+    *result = eval(node);
+    *result2 = eval(node->next);
+    result->value /= result2->value;
+    result->type = result->type || result2->type;
+    return result;
+
+    return result;
+}
+
+// TODO - DEBUGGING
+RET_VAL *evalRemainder(AST_NODE *node)
+{
+    RET_VAL *result = malloc(sizeof(RET_VAL));
+
+    if(!node)
+    {
+        warning("No operands in remainder function");
+        return &NAN_RET_VAL;
+    }
+    else if(!node->next)
+    {
+        warning("WARNING: Remainder called with only one arg!");
+        return &NAN_RET_VAL;
+    }
+    else if(node->next->next)
+    {
+        warning("Remainder called with extra (ignored) operands!");
+    }
+    result->value = fmod(node->data.number.value, node->next->data.number.value);
+    result->type = node->data.number.type || node->next->data.number.type;
+    return result;
+}
+
+RET_VAL *evalExp(AST_NODE *node)
+{
+    if(!node)
+    {
+        warning("No operands in Exp function");
+        return &NAN_RET_VAL;
+    }
+    else if(node->next)
+    {
+        warning("Exp called with extra (ignored) operands!");
+
+    }
+
+    RET_VAL *result = malloc(sizeof(RET_VAL));
+    *result = eval(node);
+    result->value = exp(result->value);
+    result->type = DOUBLE_TYPE;
+    return result;
+}
+
+RET_VAL *evalExp2(AST_NODE *node)
+{
+    if(!node)
+    {
+        warning("No operands in Exp2 function");
+        return &NAN_RET_VAL;
+    }
+    else if(node->next)
+    {
+        warning("Exp2 called with extra (ignored) operands!");
+
+    }
+
+    RET_VAL *result = malloc(sizeof(RET_VAL));
+    *result = eval(node);
+    result->value = exp2(result->value);
+    if (node->data.number.value < 0)
+        result->type = DOUBLE_TYPE;
+//    else
+//        result->type = result->type;
+
+    return result;
+}
+
+RET_VAL *evalPow(AST_NODE *node)
+{
+    RET_VAL *result = malloc(sizeof(RET_VAL));
+    RET_VAL *result2 = malloc(sizeof(RET_VAL));
+
+
+    if(!node)
+    {
+        warning("No operands in Pow function");
+        return &NAN_RET_VAL;
+    }
+    else if(!node->next)
+    {
+        warning("Pow called with no second operand!");
+        return &NAN_RET_VAL;
+    }
+    else if(node->next->next)
+    {
+        warning(" Pow called with extra (ignored) operands!");
+    }
+
+    *result = eval(node);
+    *result2 = eval(node->next);
+    result->type = result->type || result2->type;
+    result->value = pow(result->value, result2->value);
+
+    return result;
+}
+
+RET_VAL *evalLog(AST_NODE *node)
+{
+    RET_VAL *result = malloc(sizeof(RET_VAL));
+
+    if(!node)
+    {
+        warning("No operands in Log function");
+        return &NAN_RET_VAL;
+    }
+    else if(node->next)
+    {
+        warning("Log called with extra (ignored) operands!");
+
+    }
+    *result = eval(node);
+    result->value = log(result->value);
+    result->type = DOUBLE_TYPE;
+    return result;
+}
+
+RET_VAL *evalSqrt(AST_NODE *node)
+{
+    RET_VAL *result = malloc(sizeof(RET_VAL));
+
+    if(!node)
+    {
+        warning("No operands in Sqrt function");
+        return &NAN_RET_VAL;
+    }
+    else if(node->next)
+    {
+        warning("Sqrt called with extra (ignored) operands!");
+
+    }
+
+    *result = eval(node);
+    result->value = sqrt(result->value);
+    result->type = DOUBLE_TYPE;
+    return result;
+}
+
+RET_VAL *evalCbrt(AST_NODE *node)
+{
+    RET_VAL *result = malloc(sizeof(RET_VAL));
+    if(!node)
+    {
+        warning("No operands in Cbrt function");
+        return &NAN_RET_VAL;
+    }
+    else if(node->next)
+    {
+        warning("Cbrt called with extra (ignored) operands!");
+
+    }
+
+    *result = eval(node);
+    result->value = cbrt(result->value);
+    result->type = DOUBLE_TYPE;
+    return result;
+}
+
+RET_VAL *evalHypot(AST_NODE *node)
+{
+    RET_VAL *result = malloc(sizeof(RET_VAL));
+    RET_VAL *result2 = malloc(sizeof(RET_VAL));
+    result->value = 0;
+
+    if(node == NULL)
+    {
+        warning("WARNING: No operands detected!");
+        return &NAN_RET_VAL;
+    }
+
+
+    while(node != NULL)
+    {
+        *result2 = eval(node);
+        result2->value = pow(result2->value, 2);
+        result->value += result2->value;
+
+        //printf("add %f", node->data.number.value);
+
+        node = node->next;
+    }
+    result->type = DOUBLE_TYPE;
+    result->value = sqrt(result->value);
+
+    return result;
+}
+
+RET_VAL *evalMax(AST_NODE *node)
+{
+    RET_VAL *result = malloc(sizeof(RET_VAL));
+    RET_VAL *result2 = malloc(sizeof(RET_VAL));
+    result->value = 0;
+
+    if(!node)
+    {
+        warning("No operands detected!");
+        return &NAN_RET_VAL;
+    }
+    while(node != NULL)
+    {
+        *result2 = eval(node);
+        if(result->value < result2->value)
+        {
+            result->value = result2->value;
+            result->type = result2->type;
+        }
+
+        node = node->next;
+    }
+    return result;
+}
+
+RET_VAL *evalMin(AST_NODE *node)
+{
+    RET_VAL *result = malloc(sizeof(RET_VAL));
+    RET_VAL *result2 = malloc(sizeof(RET_VAL));
+    result->value = 0;
+
+    if(!node)
+    {
+        warning("No operands detected!");
+        return &NAN_RET_VAL;
+    }
+    while(node != NULL)
+    {
+        *result2 = eval(node);
+        if(result->value > result2->value)
+        {
+            result->value = result2->value;
+            result->type = result2->type;
+        }
+
+        node = node->next;
+    }
+    return result;
+}
+
 
 RET_VAL evalFuncNode(AST_NODE *node)
 {
@@ -118,12 +546,68 @@ RET_VAL evalFuncNode(AST_NODE *node)
         return NAN_RET_VAL; // unreachable but kills a clang-tidy warning
     }
 
-    // TODO complete the function
+    // TODO complete the function - done
     // HINT:
     // the helper functions that it calls will need to be defined above it
     // because they are not declared in the .h file (and should not be)
+    RET_VAL *result;
+    switch(node->data.function.func)
+    {
+        case NEG_FUNC:
+            result = evalNeg(node->data.function.opList);
+            break;
+        case ADD_FUNC:
+            result = evalAdd(node->data.function.opList);
+            break;
+        case ABS_FUNC:
+            result = evalAbs(node->data.function.opList);
+            break;
+        case SUB_FUNC:
+            result = evalSub(node->data.function.opList);
+            break;
+        case MULT_FUNC:
+            result = evalMult(node->data.function.opList);
+            break;
+        case DIV_FUNC:
+            result = evalDiv(node->data.function.opList);
+            break;
+        case REM_FUNC:
+            result = evalRemainder(node->data.function.opList);
+            break;
+        case EXP_FUNC:
+            result = evalExp(node->data.function.opList);
+            break;
+        case EXP2_FUNC:
+            result = evalExp2(node->data.function.opList);
+            break;
+        case POW_FUNC:
+            result = evalPow(node->data.function.opList);
+            break;
+        case LOG_FUNC:
+            result = evalLog(node->data.function.opList);
+            break;
+        case SQRT_FUNC:
+            result = evalSqrt(node->data.function.opList);
+            break;
+        case CBRT_FUNC:
+            result = evalCbrt(node->data.function.opList);
+            break;
+        case HYPOT_FUNC:
+            result = evalHypot(node->data.function.opList);
+            break;
+        case MAX_FUNC:
+            result = evalMax(node->data.function.opList);
+            break;
+        case MIN_FUNC:
+            result = evalMin(node->data.function.opList);
+            break;
+        default:
+            warning("WARNING: Function not recognized!");
 
-    return NAN_RET_VAL;
+
+    }
+
+    return *result;
 }
 
 RET_VAL evalNumNode(AST_NODE *node)
@@ -134,9 +618,9 @@ RET_VAL evalNumNode(AST_NODE *node)
         return NAN_RET_VAL;
     }
 
-    // TODO complete the function
+    // TODO complete the function - done
 
-    return NAN_RET_VAL;
+    return node->data.number;
 }
 
 RET_VAL eval(AST_NODE *node)
@@ -147,9 +631,19 @@ RET_VAL eval(AST_NODE *node)
         return NAN_RET_VAL;
     }
 
-    // TODO complete the function
+    // TODO complete the function - done
+    switch (node->type) {
+        case NUM_NODE_TYPE:
+            return evalNumNode(node);
+        case FUNC_NODE_TYPE:
+            return evalFuncNode(node);
+        default:
+            yyerror("TYPE not recognized!");
+            return NAN_RET_VAL;
 
-    return NAN_RET_VAL;
+    }
+
+
 }
 
 // prints the type and value of a RET_VAL

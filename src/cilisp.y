@@ -1,8 +1,8 @@
 %{
-    #include "ciLisp.h"
+    #include "cilisp.h"
     #define ylog(r, p) {fprintf(flex_bison_log_file, "BISON: %s ::= %s \n", #r, #p); fflush(stdout);}
     int yylex();
-    void yyerror(char*);
+    void yyerror(char*, ...);
 %}
 
 %union {
@@ -12,10 +12,10 @@
 };
 
 %token <ival> FUNC
-%token <dval> INT
-%token QUIT EOL EOFT
+%token <dval> INT DOUBLE
+%token QUIT EOL EOFT LPAREN RPAREN
 
-%type <astNode> s_expr
+%type <astNode> s_expr f_expr s_expr_list s_expr_section number
 
 %%
 
@@ -47,7 +47,15 @@ program:
 
 
 s_expr:
-    QUIT {
+    f_expr {
+    	ylog(s_expr, f_expr);
+	$$ = $1;
+    }
+    | number {
+        ylog(s_expr, number);
+    	$$ = $1;
+    }
+    | QUIT {
         ylog(s_expr, QUIT);
         exit(EXIT_SUCCESS);
     }
@@ -56,6 +64,41 @@ s_expr:
         yyerror("unexpected token");
         $$ = NULL;
     };
+
+f_expr:
+    LPAREN FUNC s_expr_section RPAREN {
+	ylog(f_expr, LPAREN FUNC s_expr_section RPAREN);
+	$$ = createFunctionNode($2, $3);
+    };
+
+s_expr_section:
+    s_expr_list {
+    	ylog(s_expr_section, s_expr_list);
+    	$$ = $1;
+    }
+    | /* empty */ {
+    	$$ = NULL;
+    };
+
+s_expr_list:
+    s_expr {
+    	ylog(s_expr_list, s_expr);
+    	$$ = $1;
+    }
+    | s_expr s_expr_list {
+    	ylog(s_expr_list, s_expr s_expr_list);
+    	$$ = addExpressionToList($1, $2);
+    };
+
+number:
+    INT {
+    	ylog(number, INT);
+    	$$ = createNumberNode($1, INT_TYPE);
+    }
+    | DOUBLE {
+    	ylog(number, DOUBLE);
+    	$$ = createNumberNode($1, DOUBLE_TYPE);
+    }
 
 %%
 
