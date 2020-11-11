@@ -158,8 +158,9 @@ RET_VAL *evalNeg(AST_NODE *node)
     }
 
     RET_VAL *result = malloc(sizeof(RET_VAL));
-    result->value = -node->data.number.value;
-    result->type = node->data.number.type;
+    *result = eval(node);
+    result->value = -result->value;
+    result->type = result->type;
     return result;
 
 }
@@ -178,8 +179,9 @@ RET_VAL *evalAbs(AST_NODE *node)
 
     }
     RET_VAL *result = malloc(sizeof(RET_VAL));
-    result->value = fabs(node->data.number.value);
-    result->type = node->data.number.type;
+    *result = eval(node);
+    result->value = fabs(result->value);
+    result->type = result->type;
     return result;
 }
 
@@ -191,8 +193,7 @@ RET_VAL *evalAdd(AST_NODE *node)
 
     if(node == NULL)
     {
-        warning("WARNING: No operands detected");
-        //result->value = 0;
+        warning("Add called with no operands! 0 returned!");
         result->type = INT_TYPE;
         return result;
     }
@@ -251,7 +252,7 @@ RET_VAL *evalMult(AST_NODE *node)
 
     if(node == NULL)
     {
-        warning("WARNING: No operands detected");
+        warning("Mult called with no operands! 1 returned!");
         result->type = INT_TYPE;
         return result;
     }
@@ -268,6 +269,7 @@ RET_VAL *evalMult(AST_NODE *node)
 
         //printf("add %f", node->data.number.value);
     }
+
     return result;
 }
 
@@ -298,17 +300,25 @@ RET_VAL *evalDiv(AST_NODE *node)
     }
     *result = eval(node);
     *result2 = eval(node->next);
-    result->value /= result2->value;
-    result->type = result->type || result2->type;
-    return result;
+    if(result->type == INT_TYPE && result2->type == INT_TYPE)
+    {
+        if(remainder(result->value, result2->value) != 0)
+        {
+            result->value /= result2->value;
+            result->value = floor(result->value);
+        }
+    }
+    else
+        result->value /= result2->value;
 
+    result->type = result->type || result2->type;
     return result;
 }
 
-// TODO - DEBUGGING
 RET_VAL *evalRemainder(AST_NODE *node)
 {
     RET_VAL *result = malloc(sizeof(RET_VAL));
+    RET_VAL *result2 = malloc(sizeof(RET_VAL));
 
     if(!node)
     {
@@ -324,8 +334,14 @@ RET_VAL *evalRemainder(AST_NODE *node)
     {
         warning("Remainder called with extra (ignored) operands!");
     }
-    result->value = fmod(node->data.number.value, node->next->data.number.value);
-    result->type = node->data.number.type || node->next->data.number.type;
+    *result = eval(node);
+    *result2 = eval(node->next);
+    result->value = remainder(result->value, result2->value);
+    if (result->value < abs(result2->value) && result->value < 0)
+    {
+        result->value += abs(result2->value);
+    }
+    result->type = result->type || result2->type;
     return result;
 }
 
@@ -369,7 +385,6 @@ RET_VAL *evalExp2(AST_NODE *node)
         result->type = DOUBLE_TYPE;
 //    else
 //        result->type = result->type;
-
     return result;
 }
 
@@ -496,7 +511,7 @@ RET_VAL *evalMax(AST_NODE *node)
 {
     RET_VAL *result = malloc(sizeof(RET_VAL));
     RET_VAL *result2 = malloc(sizeof(RET_VAL));
-    result->value = 0;
+    result->value = -1000;
 
     if(!node)
     {
@@ -521,7 +536,7 @@ RET_VAL *evalMin(AST_NODE *node)
 {
     RET_VAL *result = malloc(sizeof(RET_VAL));
     RET_VAL *result2 = malloc(sizeof(RET_VAL));
-    result->value = 0;
+    result->value = 1000;
 
     if(!node)
     {
@@ -667,9 +682,22 @@ void printRetVal(RET_VAL val)
             break;
     }
 }
+// TODO - DEBUGGING
+void freeFunctionNode(AST_FUNCTION function)
+{
+    if(function.opList != NULL)
+    {
+        AST_NODE *node = function.opList;
+        while(node != NULL)
+        {
+            AST_NODE *next = node->next;
+            freeNode(node);
+            node = next;
+        }
+    }
+}
 
-
-
+// TODO - DEBUGGING
 void freeNode(AST_NODE *node)
 {
     if (!node)
@@ -677,6 +705,11 @@ void freeNode(AST_NODE *node)
         return;
     }
 
+    AST_NODE *head = node;
+    if(head->type == FUNC_NODE_TYPE)
+    {
+        freeFunctionNode(head->data.function);
+    }
     // TODO complete the function
 
     // look through the AST_NODE struct, decide what
@@ -690,5 +723,5 @@ void freeNode(AST_NODE *node)
     // freeFunctionNode)
 
     // and, finally,
-    free(node);
+    free(head);
 }
