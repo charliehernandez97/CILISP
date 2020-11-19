@@ -6,16 +6,21 @@
 %}
 
 %union {
+    char *cval;
     double dval;
     int ival;
     struct ast_node *astNode;
+    struct symbol_table_node *symTblNode;
 }
 
+%token <cval> SYMBOL
 %token <ival> FUNC
 %token <dval> INT DOUBLE
-%token QUIT EOL EOFT LPAREN RPAREN
+%token QUIT EOL EOFT LPAREN RPAREN LET
 
 %type <astNode> s_expr f_expr s_expr_list s_expr_section number
+%type <symTblNode> let_section let_list let_elem
+
 
 %%
 
@@ -55,6 +60,14 @@ s_expr:
         ylog(s_expr, number);
     	$$ = $1;
     }
+    | SYMBOL {
+    	ylog(s_expr, SYMBOL);
+    	$$ = createSymbolNode($1);
+    }
+    | LPAREN let_section s_expr RPAREN {
+    	ylog(s_expr, LPAREN let_section s_expr RPAREN);
+    	$$ = createScopeNode($2, $3);
+    }
     | QUIT {
         ylog(s_expr, QUIT);
         exit(EXIT_SUCCESS);
@@ -64,6 +77,8 @@ s_expr:
         yyerror("unexpected token");
         $$ = NULL;
     };
+
+
 
 f_expr:
     LPAREN FUNC s_expr_section RPAREN {
@@ -83,7 +98,7 @@ s_expr_section:
 s_expr_list:
     s_expr {
     	ylog(s_expr_list, s_expr);
-    	$$ = $1;
+    	$$ = addExpressionToList($1, NULL);
     }
     | s_expr s_expr_list {
     	ylog(s_expr_list, s_expr s_expr_list);
@@ -98,7 +113,30 @@ number:
     | DOUBLE {
     	ylog(number, DOUBLE);
     	$$ = createNumberNode($1, DOUBLE_TYPE);
+    };
+
+let_section:
+    LPAREN LET let_list RPAREN {
+    	ylog(let_section, LPAREN LET let_list RPAREN);
+    	$$ = $3;
+    };
+
+let_list:
+    let_elem {
+    	ylog(let_list, let_elem);
+    	$$ = let_list($1, NULL);
     }
+    | let_elem let_list {
+    	ylog(let_list, let_elem let_list);
+    	$$ = let_list($1, $2);
+    };
+
+let_elem:
+    LPAREN SYMBOL s_expr RPAREN {
+    	ylog(let_elem, LPAREN SYMBOL s_expr RPAREN);
+    	$$ = let_elem($2, $3);
+    };
+
 
 %%
 

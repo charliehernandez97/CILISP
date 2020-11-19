@@ -9,11 +9,14 @@
 %}
 
 digit   [0-9]
+letter  [a-zA-Z_$]
 int     [+-]?{digit}+
 double  [+-]?{digit}+\.{digit}*
 quit    "quit"
+let     "let"
 
 func        "neg"|"abs"|"exp"|"log"|"sqrt"|"add"|"sub"|"mult"|"div"|"remainder"|"exp"|"exp2"|"pow"|"log"|"sqrt"|"cbrt"|"hypot"|"max"|"min"
+symbol      {letter}({letter}|{digit})*
 
 %%
 
@@ -24,9 +27,19 @@ func        "neg"|"abs"|"exp"|"log"|"sqrt"|"add"|"sub"|"mult"|"div"|"remainder"|
 }
 
 {double} {
-    llog(DOUBLE)
+    llog(DOUBLE);
     yylval.dval = strtod(yytext, NULL);
     return DOUBLE;
+}
+
+{let} {
+    llog(LET);
+    return LET;
+}
+
+{quit} {
+    llog(QUIT);
+    return QUIT;
 }
 
 {func} {
@@ -34,6 +47,17 @@ func        "neg"|"abs"|"exp"|"log"|"sqrt"|"add"|"sub"|"mult"|"div"|"remainder"|
     yylval.ival = resolveFunc(yytext);
     return FUNC;
 }
+
+
+
+{symbol} {
+    llog(SYMBOL);
+    yylval.cval = (char *) malloc(strlen(yytext)*sizeof(char));
+    strcpy(yylval.cval, yytext);
+    return SYMBOL;
+}
+
+
 
 [\n] {
     llog(EOL);
@@ -44,11 +68,6 @@ func        "neg"|"abs"|"exp"|"log"|"sqrt"|"add"|"sub"|"mult"|"div"|"remainder"|
     llog(EOFT);
     return EOFT;
     }
-
-{quit} {
-    llog(QUIT);
-    return QUIT;
-}
 
 \( {
     llog(LPAREN);
