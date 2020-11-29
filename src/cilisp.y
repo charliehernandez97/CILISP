@@ -135,6 +135,10 @@ let_elem:
     LPAREN TYPE SYMBOL s_expr RPAREN {
     	ylog(let_elem, LPAREN TYPE SYMBOL s_expr RPAREN);
     	$$ = let_elem($2, $3, $4);
+    }
+    | LPAREN SYMBOL s_expr RPAREN {
+          ylog(let_elem, LPAREN SYMBOL s_expr RPAREN);
+	  $$ = let_elem(2, $2, $3);
     };
 
 

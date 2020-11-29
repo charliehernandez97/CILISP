@@ -775,7 +775,7 @@ RET_VAL evalSymbolNode(AST_NODE *symbol)
                 {
                     result.type = DOUBLE_TYPE;
                 }
-                /// freeNode
+                /// free Node
                 return result;
             }
             else
