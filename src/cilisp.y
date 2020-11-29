@@ -14,7 +14,7 @@
 }
 
 %token <cval> SYMBOL
-%token <ival> FUNC
+%token <ival> FUNC TYPE
 %token <dval> INT DOUBLE
 %token QUIT EOL EOFT LPAREN RPAREN LET
 
@@ -132,10 +132,12 @@ let_list:
     };
 
 let_elem:
-    LPAREN SYMBOL s_expr RPAREN {
-    	ylog(let_elem, LPAREN SYMBOL s_expr RPAREN);
-    	$$ = let_elem($2, $3);
+    LPAREN TYPE SYMBOL s_expr RPAREN {
+    	ylog(let_elem, LPAREN TYPE SYMBOL s_expr RPAREN);
+    	$$ = let_elem($2, $3, $4);
     };
+
+
 
 
 %%

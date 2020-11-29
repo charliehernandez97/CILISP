@@ -58,8 +58,10 @@ FUNC_TYPE resolveFunc(char *);
 typedef enum num_type {
     INT_TYPE,
     DOUBLE_TYPE,
+    NO_TYPE
 } NUM_TYPE;
 
+NUM_TYPE resolveType(char *);
 
 typedef struct {
     NUM_TYPE type;
@@ -105,6 +107,7 @@ typedef struct ast_node {
 
 typedef struct symbol_table_node {
     char *id;
+    NUM_TYPE type;
     AST_NODE *value;
     struct symbol_table_node *next;
 } SYMBOL_TABLE_NODE;
@@ -115,7 +118,7 @@ AST_NODE *createFunctionNode(FUNC_TYPE func, AST_NODE *opList);
 AST_NODE *createSymbolNode(char *id);
 AST_NODE *createScopeNode(SYMBOL_TABLE_NODE *tableNode, AST_NODE *node);
 SYMBOL_TABLE_NODE *let_list(SYMBOL_TABLE_NODE *let_elem, SYMBOL_TABLE_NODE *let_list);
-SYMBOL_TABLE_NODE *let_elem(char *id, AST_NODE *s_expr);
+SYMBOL_TABLE_NODE *let_elem(NUM_TYPE type, char *id, AST_NODE *s_expr);
 AST_NODE *addExpressionToList(AST_NODE *newExpr, AST_NODE *exprList);
 RET_VAL eval(AST_NODE *node);
 

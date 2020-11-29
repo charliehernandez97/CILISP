@@ -14,6 +14,7 @@ int     [+-]?{digit}+
 double  [+-]?{digit}+\.{digit}*
 quit    "quit"
 let     "let"
+type    "int"|"double"
 
 func        "neg"|"abs"|"exp"|"log"|"sqrt"|"add"|"sub"|"mult"|"div"|"remainder"|"exp"|"exp2"|"pow"|"log"|"sqrt"|"cbrt"|"hypot"|"max"|"min"
 symbol      {letter}({letter}|{digit})*
@@ -40,6 +41,12 @@ symbol      {letter}({letter}|{digit})*
 {quit} {
     llog(QUIT);
     return QUIT;
+}
+
+{type} {
+    llog(TYPE);
+    yylval.ival = resolveType(yytext);
+    return TYPE;
 }
 
 {func} {

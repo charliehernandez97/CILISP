@@ -93,6 +93,13 @@ FUNC_TYPE resolveFunc(char *funcName)
     return CUSTOM_FUNC;
 }
 
+NUM_TYPE resolveType(char * type)
+{
+    if(strcmp(type, "int") == 0 ) return 0;
+    else if(strcmp(type, "double") == 0) return 1;
+    else return 2;
+}
+
 AST_NODE *createNumberNode(double value, NUM_TYPE type)
 {
     AST_NODE *node;
@@ -194,13 +201,6 @@ AST_NODE *createScopeNode(SYMBOL_TABLE_NODE *let_section, AST_NODE *s_expr)
     return scopeNode;
 }
 
-// link symbol table node to AST_NODES whose scope they are in
-//AST_NODE *let_section(SYMBOL_TABLE_NODE *let_list, AST_NODE *s_expr)
-//{
-//    s_expr->symbolTable = let_list;
-//    return s_expr;
-//}
-
 // add symbol to the list
 SYMBOL_TABLE_NODE *let_list(SYMBOL_TABLE_NODE *let_elem, SYMBOL_TABLE_NODE *let_list)
 {
@@ -217,7 +217,6 @@ SYMBOL_TABLE_NODE *let_list(SYMBOL_TABLE_NODE *let_elem, SYMBOL_TABLE_NODE *let_
             let_list = let_elem;    // let_list takes the value of the head of the let_elem
             break;
         }
-
         table = table->next;
     }
 
@@ -229,7 +228,7 @@ SYMBOL_TABLE_NODE *let_list(SYMBOL_TABLE_NODE *let_elem, SYMBOL_TABLE_NODE *let_
 }
 
 // create symbol table node with data
-SYMBOL_TABLE_NODE *let_elem(char *id, AST_NODE *s_expr)
+SYMBOL_TABLE_NODE *let_elem(NUM_TYPE type, char *id, AST_NODE *s_expr)
 {
     SYMBOL_TABLE_NODE *symbolTableNode;
     size_t nodeSize;
@@ -243,7 +242,8 @@ SYMBOL_TABLE_NODE *let_elem(char *id, AST_NODE *s_expr)
 
     symbolTableNode->id = id;
     symbolTableNode->value = s_expr;
-    symbolTableNode->next = NULL;
+    symbolTableNode->type = type;
+
     return symbolTableNode;
 }
 
@@ -765,7 +765,17 @@ RET_VAL evalSymbolNode(AST_NODE *symbol)
             if(strcmp(current->id, symbol->data.symbol.id) == 0)
             {
                 result = eval(current->value);
-
+                if(result.type == DOUBLE_TYPE && current->type == INT_TYPE)
+                {
+                    warning("Precision loss on int cast from %lf to %d", result.value, (int)round(result.value));
+                    result.type = INT_TYPE;
+                    result.value = round(result.value);
+                }
+                else if(result.type == INT_TYPE && current->type == DOUBLE_TYPE)
+                {
+                    result.type = DOUBLE_TYPE;
+                }
+                /// freeNode
                 return result;
             }
             else
@@ -861,7 +871,7 @@ void freeNode(AST_NODE *node)
 
 }
 
-void freeSymbolTableNode()
+void freeSymbolTableNode(AST_NODE *node)
 {
 
 }
