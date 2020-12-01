@@ -47,6 +47,12 @@ typedef enum func_type {
     HYPOT_FUNC,
     MAX_FUNC,
     MIN_FUNC,
+    RAND_FUNC,
+    READ_FUNC,
+    EQUAL,
+    LESS,
+    GREATER,
+    PRINT,
     // TODO complete the enum
     CUSTOM_FUNC
 } FUNC_TYPE;
@@ -81,7 +87,8 @@ typedef enum ast_node_type {
     NUM_NODE_TYPE,
     FUNC_NODE_TYPE,
     SYM_NODE_TYPE,
-    SCOPE_NODE_TYPE
+    SCOPE_NODE_TYPE,
+    COND_NODE_TYPE
 } AST_NODE_TYPE;
 
 typedef struct {
@@ -92,6 +99,12 @@ typedef struct {
     struct ast_node *child;
 } AST_SCOPE;
 
+typedef struct cond_ast_node {
+    struct ast_node *condition;
+    struct ast_node *ifTrue;
+    struct ast_node *ifFalse;
+}AST_CONDITIONAL;
+
 typedef struct ast_node {
     AST_NODE_TYPE type;
     struct ast_node *parent;
@@ -101,6 +114,7 @@ typedef struct ast_node {
         AST_FUNCTION function;
         AST_SYMBOL symbol;
         AST_SCOPE scope;
+        AST_CONDITIONAL conditional;
     } data;
     struct ast_node *next;
 } AST_NODE;
@@ -117,6 +131,7 @@ AST_NODE *createNumberNode(double value, NUM_TYPE type);
 AST_NODE *createFunctionNode(FUNC_TYPE func, AST_NODE *opList);
 AST_NODE *createSymbolNode(char *id);
 AST_NODE *createScopeNode(SYMBOL_TABLE_NODE *tableNode, AST_NODE *node);
+AST_NODE *createCondNode(AST_NODE *condition, AST_NODE *trueValue, AST_NODE *falseValue);
 SYMBOL_TABLE_NODE *let_list(SYMBOL_TABLE_NODE *let_elem, SYMBOL_TABLE_NODE *let_list);
 SYMBOL_TABLE_NODE *let_elem(NUM_TYPE type, char *id, AST_NODE *s_expr);
 AST_NODE *addExpressionToList(AST_NODE *newExpr, AST_NODE *exprList);

@@ -15,9 +15,10 @@ double  [+-]?{digit}+\.{digit}*
 quit    "quit"
 let     "let"
 type    "int"|"double"
+cond    "cond"
 
-func        "neg"|"abs"|"exp"|"log"|"sqrt"|"add"|"sub"|"mult"|"div"|"remainder"|"exp"|"exp2"|"pow"|"log"|"sqrt"|"cbrt"|"hypot"|"max"|"min"
-symbol      {letter}({letter}|{digit})*
+func    "neg"|"abs"|"exp"|"log"|"sqrt"|"add"|"sub"|"mult"|"div"|"remainder"|"exp"|"exp2"|"pow"|"log"|"sqrt"|"cbrt"|"hypot"|"max"|"min"|"rand"|"read"|"equal"|"less"|"greater"|"print"
+symbol  {letter}({letter}|{digit})*
 
 %%
 
@@ -41,6 +42,11 @@ symbol      {letter}({letter}|{digit})*
 {quit} {
     llog(QUIT);
     return QUIT;
+}
+
+{cond} {
+    llog(COND);
+    return COND;
 }
 
 {type} {

@@ -75,6 +75,12 @@ FUNC_TYPE resolveFunc(char *funcName)
             "hypot",
             "max",
             "min",
+            "rand",
+            "read",
+            "equal",
+            "less",
+            "greater",
+            "print",
             "custom",
 
             // TODO complete the array
@@ -97,7 +103,6 @@ NUM_TYPE resolveType(char * type)
 {
     if(strcmp(type, "int") == 0 ) return 0;
     else if(strcmp(type, "double") == 0) return 1;
-    else return 2;
 }
 
 AST_NODE *createNumberNode(double value, NUM_TYPE type)
@@ -201,6 +206,29 @@ AST_NODE *createScopeNode(SYMBOL_TABLE_NODE *let_section, AST_NODE *s_expr)
     return scopeNode;
 }
 
+AST_NODE *createCondNode(AST_NODE *condition, AST_NODE *trueValue, AST_NODE *falseValue)
+{
+    AST_NODE *cond;
+    size_t nodeSize;
+
+    nodeSize = sizeof(AST_NODE);
+    if ((cond = calloc(nodeSize, 1)) == NULL)
+    {
+        yyerror("Memory allocation failed!");
+        exit(1);
+    }
+
+    cond->type = COND_NODE_TYPE;
+    cond->data.conditional.condition = condition;
+    cond->data.conditional.ifTrue = trueValue;
+    cond->data.conditional.ifFalse = falseValue;
+    condition->parent = cond;
+    trueValue->parent = cond;
+    falseValue->parent = cond;
+
+    return cond;
+}
+
 // add symbol to the list
 SYMBOL_TABLE_NODE *let_list(SYMBOL_TABLE_NODE *let_elem, SYMBOL_TABLE_NODE *let_list)
 {
@@ -248,67 +276,70 @@ SYMBOL_TABLE_NODE *let_elem(NUM_TYPE type, char *id, AST_NODE *s_expr)
 }
 
 
-RET_VAL *evalNeg(AST_NODE *node)
+RET_VAL evalNeg(AST_NODE *node)
 {
     if(!node)
     {
         warning("No operands in Neg function");
-        return &NAN_RET_VAL;
+        return NAN_RET_VAL;
     }
     else if(node->next)
     {
         warning("neg called with extra (ignored) operands!");
     }
 
-    RET_VAL *result = malloc(sizeof(RET_VAL));
-    *result = eval(node);
-    result->value = -result->value;
-    result->type = result->type;
+    RET_VAL result;
+    result = eval(node);
+    result.value = -result.value;
+    result.type = result.type;
     return result;
 
 }
 
-RET_VAL *evalAbs(AST_NODE *node)
+RET_VAL evalAbs(AST_NODE *node)
 {
 
     if(!node)
     {
         warning("No operands in Neg function");
-        return &NAN_RET_VAL;
+        return NAN_RET_VAL;
     }
     else if(node->next)
     {
         warning("Too many operands in Abs function");
 
     }
-    RET_VAL *result = malloc(sizeof(RET_VAL));
-    *result = eval(node);
-    result->value = fabs(result->value);
-    result->type = result->type;
+    RET_VAL result;
+    result = eval(node);
+    result.value = fabs(result.value);
+    result.type = result.type;
     return result;
 }
 
-RET_VAL *evalAdd(AST_NODE *node)
+RET_VAL evalAdd(AST_NODE *node)
 {
-    RET_VAL *result = malloc(sizeof(RET_VAL));
-    RET_VAL *result2 = malloc(sizeof(RET_VAL));
-    result->value = 0;
+    RET_VAL result;
+    RET_VAL result2;
+    result.value = 0;
 
     if(node == NULL)
     {
         warning("Add called with no operands! 0 returned!");
-        result->type = INT_TYPE;
+        result.type = INT_TYPE;
         return result;
     }
 
 
     while(node != NULL)
     {
-        *result2 = eval(node);
+        result2 = eval(node);
 
-        result->value += result2->value;
-        result->type = result2->type || result->type;
-        //printf("add %f", node->data.number.value);
+        result.value += result2.value;
+        if(result.type == DOUBLE_TYPE || result2.type == DOUBLE_TYPE)
+            result.type = DOUBLE_TYPE;
+        else
+            result.type = INT_TYPE;
+
         node = node->next;
     }
 
@@ -316,29 +347,32 @@ RET_VAL *evalAdd(AST_NODE *node)
 }
 
 
-RET_VAL *evalSub(AST_NODE *node)
+RET_VAL evalSub(AST_NODE *node)
 {
-    RET_VAL *result = malloc(sizeof(RET_VAL));
-    RET_VAL *result2= malloc(sizeof(RET_VAL));
+    RET_VAL result;
+    RET_VAL result2;
     if(!node)
     {
         warning("No operands in Sub function");
-        return &NAN_RET_VAL;
+        return NAN_RET_VAL;
     }
     else if(!node->next)
     {
         warning("WARNING: Sub called with only one arg!");
-        return &NAN_RET_VAL;
+        return NAN_RET_VAL;
     }
     else if(node->next->next)
     {
         warning("Sub called with extra (ignored) operands!");
     }
 
-    *result = eval(node);
-    *result2 = eval(node->next);
-    result->value -= result2->value;
-    result->type = result->type || result2->type;
+    result = eval(node);
+    result2 = eval(node->next);
+    result.value -= result2.value;
+    if(result.type == DOUBLE_TYPE || result2.type == DOUBLE_TYPE)
+        result.type = DOUBLE_TYPE;
+    else
+        result.type = INT_TYPE;
     return result;
 
 
@@ -346,27 +380,30 @@ RET_VAL *evalSub(AST_NODE *node)
 }
 
 // TODO - DEBUGGING REQUIRED - DOES NOT PRINT RIGHT NUM_TYPE IN SPECIFIC CIRCUMSTANCES
-RET_VAL *evalMult(AST_NODE *node)
+RET_VAL evalMult(AST_NODE *node)
 {
-    RET_VAL *result = malloc(sizeof(RET_VAL));
-    RET_VAL *result2 = malloc(sizeof(RET_VAL));
+    RET_VAL result;
+    RET_VAL result2;
 
-    result->value = 1;
+    result.value = 1;
 
     if(node == NULL)
     {
         warning("Mult called with no operands! 1 returned!");
-        result->type = INT_TYPE;
+        result.type = INT_TYPE;
         return result;
     }
 
     //result->type = node->data.number.type || node->next->data.number.type;
     while(node != NULL)
     {
-        *result2 = eval(node);
+        result2 = eval(node);
 
-        result->value *= result2->value;
-        result->type = result2->type || result->type;
+        result.value *= result2.value;
+        if(result.type == DOUBLE_TYPE || result2.type == DOUBLE_TYPE)
+            result.type = DOUBLE_TYPE;
+        else
+            result.type = INT_TYPE;
         //printf("add %f", node->data.number.value);
         node = node->next;
 
@@ -376,20 +413,20 @@ RET_VAL *evalMult(AST_NODE *node)
     return result;
 }
 
-RET_VAL *evalDiv(AST_NODE *node)
+RET_VAL evalDiv(AST_NODE *node)
 {
-    RET_VAL *result = malloc(sizeof(RET_VAL));
-    RET_VAL *result2 = malloc(sizeof(RET_VAL));
+    RET_VAL result;
+    RET_VAL result2;
 
     if(!node)
     {
         warning("No operands in div function");
-        return &NAN_RET_VAL;
+        return NAN_RET_VAL;
     }
     else if(!node->next)
     {
         warning("WARNING: div called with only one arg!");
-        return &NAN_RET_VAL;
+        return NAN_RET_VAL;
     }
     else if(node->next->next)
     {
@@ -399,62 +436,68 @@ RET_VAL *evalDiv(AST_NODE *node)
     if(node->next->data.number.value == 0)
     {
         warning("You cannot divide by zero!");
-        return &NAN_RET_VAL;
+        return NAN_RET_VAL;
     }
-    *result = eval(node);
-    *result2 = eval(node->next);
-    if(result->type == INT_TYPE && result2->type == INT_TYPE)
+    result = eval(node);
+    result2 = eval(node->next);
+    if(result.type == INT_TYPE && result2.type == INT_TYPE)
     {
-        if(remainder(result->value, result2->value) != 0)
+        if(remainder(result.value, result2.value) != 0)
         {
-            result->value /= result2->value;
-            result->value = floor(result->value);
+            result.value /= result2.value;
+            result.value = floor(result.value);
         }
-        else result->value /= result2->value;
+        else result.value /= result2.value;
     }
     else
-        result->value /= result2->value;
+        result.value /= result2.value;
 
-    result->type = result->type || result2->type;
+    if(result.type == DOUBLE_TYPE || result2.type == DOUBLE_TYPE)
+        result.type = DOUBLE_TYPE;
+    else
+        result.type = INT_TYPE;
     return result;
 }
 
-RET_VAL *evalRemainder(AST_NODE *node)
+RET_VAL evalRemainder(AST_NODE *node)
 {
-    RET_VAL *result = malloc(sizeof(RET_VAL));
-    RET_VAL *result2 = malloc(sizeof(RET_VAL));
+    RET_VAL result;
+    RET_VAL result2;
 
     if(!node)
     {
         warning("No operands in remainder function");
-        return &NAN_RET_VAL;
+        return NAN_RET_VAL;
     }
     else if(!node->next)
     {
         warning("WARNING: Remainder called with only one arg!");
-        return &NAN_RET_VAL;
+        return NAN_RET_VAL;
     }
     else if(node->next->next)
     {
         warning("Remainder called with extra (ignored) operands!");
     }
-    *result = eval(node);
-    *result2 = eval(node->next);
-    result->value = remainder(result->value, result2->value);
-    if (result->value < abs(result2->value) && result->value < 0)
+    result = eval(node);
+    result2 = eval(node->next);
+    result.value = remainder(result.value, result2.value);
+    if (result.value < abs(result2.value) && result.value < 0)
     {
-        result->value += abs(result2->value);
+        result.value += abs(result2.value);
     }
-    result->type = result->type || result2->type;
+    if(result.type == DOUBLE_TYPE || result2.type == DOUBLE_TYPE)
+        result.type = DOUBLE_TYPE;
+    else
+        result.type = INT_TYPE;
     return result;
 }
 
-RET_VAL *evalExp(AST_NODE *node)
+RET_VAL evalExp(AST_NODE *node)
 {
     if(!node)
     {
         warning("No operands in Exp function");
-        return &NAN_RET_VAL;
+        return NAN_RET_VAL;
     }
     else if(node->next)
     {
@@ -462,19 +505,19 @@ RET_VAL *evalExp(AST_NODE *node)
 
     }
 
-    RET_VAL *result = malloc(sizeof(RET_VAL));
-    *result = eval(node);
-    result->value = exp(result->value);
-    result->type = DOUBLE_TYPE;
+    RET_VAL result;
+    result = eval(node);
+    result.value = exp(result.value);
+    result.type = DOUBLE_TYPE;
     return result;
 }
 
-RET_VAL *evalExp2(AST_NODE *node)
+RET_VAL evalExp2(AST_NODE *node)
 {
     if(!node)
     {
         warning("No operands in Exp2 function");
-        return &NAN_RET_VAL;
+        return NAN_RET_VAL;
     }
     else if(node->next)
     {
@@ -482,73 +525,73 @@ RET_VAL *evalExp2(AST_NODE *node)
 
     }
 
-    RET_VAL *result = malloc(sizeof(RET_VAL));
-    *result = eval(node);
-    result->value = exp2(result->value);
+    RET_VAL result;
+    result = eval(node);
+    result.value = exp2(result.value);
     if (node->data.number.value < 0)
-        result->type = DOUBLE_TYPE;
+        result.type = DOUBLE_TYPE;
 //    else
 //        result->type = result->type;
     return result;
 }
 
-RET_VAL *evalPow(AST_NODE *node)
+RET_VAL evalPow(AST_NODE *node)
 {
-    RET_VAL *result = malloc(sizeof(RET_VAL));
-    RET_VAL *result2 = malloc(sizeof(RET_VAL));
+    RET_VAL result;
+    RET_VAL result2;
 
 
     if(!node)
     {
         warning("No operands in Pow function");
-        return &NAN_RET_VAL;
+        return NAN_RET_VAL;
     }
     else if(!node->next)
     {
         warning("Pow called with no second operand!");
-        return &NAN_RET_VAL;
+        return NAN_RET_VAL;
     }
     else if(node->next->next)
     {
         warning(" Pow called with extra (ignored) operands!");
     }
 
-    *result = eval(node);
-    *result2 = eval(node->next);
-    result->type = result->type || result2->type;
-    result->value = pow(result->value, result2->value);
+    result = eval(node);
+    result2 = eval(node->next);
+    result.type = result.type || result2.type;
+    result.value = pow(result.value, result2.value);
 
     return result;
 }
 
-RET_VAL *evalLog(AST_NODE *node)
+RET_VAL evalLog(AST_NODE *node)
 {
-    RET_VAL *result = malloc(sizeof(RET_VAL));
+    RET_VAL result;
 
     if(!node)
     {
         warning("No operands in Log function");
-        return &NAN_RET_VAL;
+        return NAN_RET_VAL;
     }
     else if(node->next)
     {
         warning("Log called with extra (ignored) operands!");
 
     }
-    *result = eval(node);
-    result->value = log(result->value);
-    result->type = DOUBLE_TYPE;
+    result = eval(node);
+    result.value = log(result.value);
+    result.type = DOUBLE_TYPE;
     return result;
 }
 
-RET_VAL *evalSqrt(AST_NODE *node)
+RET_VAL evalSqrt(AST_NODE *node)
 {
-    RET_VAL *result = malloc(sizeof(RET_VAL));
+    RET_VAL result;
 
     if(!node)
     {
         warning("No operands in Sqrt function");
-        return &NAN_RET_VAL;
+        return NAN_RET_VAL;
     }
     else if(node->next)
     {
@@ -556,19 +599,19 @@ RET_VAL *evalSqrt(AST_NODE *node)
 
     }
 
-    *result = eval(node);
-    result->value = sqrt(result->value);
-    result->type = DOUBLE_TYPE;
+    result = eval(node);
+    result.value = sqrt(result.value);
+    result.type = DOUBLE_TYPE;
     return result;
 }
 
-RET_VAL *evalCbrt(AST_NODE *node)
+RET_VAL evalCbrt(AST_NODE *node)
 {
-    RET_VAL *result = malloc(sizeof(RET_VAL));
+    RET_VAL result;
     if(!node)
     {
         warning("No operands in Cbrt function");
-        return &NAN_RET_VAL;
+        return NAN_RET_VAL;
     }
     else if(node->next)
     {
@@ -576,59 +619,59 @@ RET_VAL *evalCbrt(AST_NODE *node)
 
     }
 
-    *result = eval(node);
-    result->value = cbrt(result->value);
-    result->type = DOUBLE_TYPE;
+    result = eval(node);
+    result.value = cbrt(result.value);
+    result.type = DOUBLE_TYPE;
     return result;
 }
 
-RET_VAL *evalHypot(AST_NODE *node)
+RET_VAL evalHypot(AST_NODE *node)
 {
-    RET_VAL *result = malloc(sizeof(RET_VAL));
-    RET_VAL *result2 = malloc(sizeof(RET_VAL));
-    result->value = 0;
+    RET_VAL result;
+    RET_VAL result2;
+    result.value = 0;
 
     if(node == NULL)
     {
         warning("WARNING: No operands detected!");
-        return &NAN_RET_VAL;
+        return NAN_RET_VAL;
     }
 
 
     while(node != NULL)
     {
-        *result2 = eval(node);
-        result2->value = pow(result2->value, 2);
-        result->value += result2->value;
+        result2 = eval(node);
+        result2.value = pow(result2.value, 2);
+        result.value += result2.value;
 
         //printf("add %f", node->data.number.value);
 
         node = node->next;
     }
-    result->type = DOUBLE_TYPE;
-    result->value = sqrt(result->value);
+    result.type = DOUBLE_TYPE;
+    result.value = sqrt(result.value);
 
     return result;
 }
 
-RET_VAL *evalMax(AST_NODE *node)
+RET_VAL evalMax(AST_NODE *node)
 {
-    RET_VAL *result = malloc(sizeof(RET_VAL));
-    RET_VAL *result2 = malloc(sizeof(RET_VAL));
-    result->value = -1000;
+    RET_VAL result;
+    RET_VAL result2;
+    result.value = -1000;
 
     if(!node)
     {
         warning("No operands detected!");
-        return &NAN_RET_VAL;
+        return NAN_RET_VAL;
     }
     while(node != NULL)
     {
-        *result2 = eval(node);
-        if(result->value < result2->value)
+        result2 = eval(node);
+        if(result.value < result2.value)
         {
-            result->value = result2->value;
-            result->type = result2->type;
+            result.value = result2.value;
+            result.type = result2.type;
         }
 
         node = node->next;
@@ -636,24 +679,24 @@ RET_VAL *evalMax(AST_NODE *node)
     return result;
 }
 
-RET_VAL *evalMin(AST_NODE *node)
+RET_VAL evalMin(AST_NODE *node)
 {
-    RET_VAL *result = malloc(sizeof(RET_VAL));
-    RET_VAL *result2 = malloc(sizeof(RET_VAL));
-    result->value = 1000;
+    RET_VAL result;
+    RET_VAL result2;
+    result.value = 1000;
 
     if(!node)
     {
         warning("No operands detected!");
-        return &NAN_RET_VAL;
+        return NAN_RET_VAL;
     }
     while(node != NULL)
     {
-        *result2 = eval(node);
-        if(result->value > result2->value)
+        result2 = eval(node);
+        if(result.value > result2.value)
         {
-            result->value = result2->value;
-            result->type = result2->type;
+            result.value = result2.value;
+            result.type = result2.type;
         }
 
         node = node->next;
@@ -661,6 +704,120 @@ RET_VAL *evalMin(AST_NODE *node)
     return result;
 }
 
+RET_VAL evalRand()
+{
+    RET_VAL result;
+    result.value = (double)rand() / (double)RAND_MAX;
+    result.type = DOUBLE_TYPE;
+    return result;
+}
+
+RET_VAL evalRead()
+{
+//    RET_VAL result;
+//    printf("read :: ");
+//    //scanf("%lf", result.value);
+//    //return result;
+}
+
+RET_VAL evalEqual(AST_NODE *node)
+{
+    RET_VAL num1;
+    RET_VAL num2;
+    if(!node)
+    {
+        warning("No operands detected!");
+        return NAN_RET_VAL;
+    }
+    else if(!node->next)
+    {
+        warning("Second operand not detected in Equal!");
+        return NAN_RET_VAL;
+    }
+
+    num1 = eval(node);
+    num2 = eval(node->next);
+    if(num1.value == num2.value)
+        num1.value = 1;
+    else
+        num1.value = 0;
+
+    num1.type = INT_TYPE;
+
+    return num1;
+}
+
+RET_VAL evalLess(AST_NODE *node)
+{
+    RET_VAL num1;
+    RET_VAL num2;
+    if(!node)
+    {
+        warning("No operands detected!");
+        return NAN_RET_VAL;
+    }
+    else if(!node->next)
+    {
+        warning("Second operand not detected in Equal!");
+        return NAN_RET_VAL;
+    }
+
+    num1 = eval(node);
+    num2 = eval(node->next);
+
+    if(num1.value < num2.value)
+        num1.value = 1;
+    else
+        num1.value = 0;
+
+    num1.type = INT_TYPE;
+
+    return num1;
+}
+
+RET_VAL evalGreater(AST_NODE *node)
+{
+    RET_VAL num1;
+    RET_VAL num2;
+    if(!node)
+    {
+        warning("No operands detected!");
+        return NAN_RET_VAL;
+    }
+    else if(!node->next)
+    {
+        warning("Second operand not detected in Equal!");
+        return NAN_RET_VAL;
+    }
+
+    num1 = eval(node);
+    num2 = eval(node->next);
+
+    if(num1.value > num2.value)
+        num1.value = 1;
+    else
+        num1.value = 0;
+
+    num1.type = INT_TYPE;
+
+    return num1;
+}
+
+RET_VAL evalPrint(AST_NODE *node)
+{
+    RET_VAL result;
+
+    if(!node)
+    {
+        warning("print called with no operands!");
+        return NAN_RET_VAL;
+    }
+    if(node->next != NULL)
+        warning("print called with extra (ignored) operands!");
+    result = eval(node);
+    printRetVal(result);
+    return result;
+}
 
 RET_VAL evalFuncNode(AST_NODE *node)
 {
@@ -674,7 +831,7 @@ RET_VAL evalFuncNode(AST_NODE *node)
     // HINT:
     // the helper functions that it calls will need to be defined above it
     // because they are not declared in the .h file (and should not be)
-    RET_VAL *result;
+    RET_VAL result;
     switch(node->data.function.func)
     {
         case NEG_FUNC:
@@ -725,13 +882,31 @@ RET_VAL evalFuncNode(AST_NODE *node)
         case MIN_FUNC:
             result = evalMin(node->data.function.opList);
             break;
+        case RAND_FUNC:
+            result = evalRand();
+            break;
+        case READ_FUNC:
+            result = evalRead();
+            break;
+        case EQUAL:
+            result = evalEqual(node->data.function.opList);
+            break;
+        case LESS:
+            result = evalLess(node->data.function.opList);
+            break;
+        case GREATER:
+            result = evalGreater(node->data.function.opList);
+            break;
+        case PRINT:
+            result = evalPrint(node->data.function.opList);
+            break;
         default:
             warning("WARNING: Function not recognized!");
 
 
     }
 
-    return *result;
+    return result;
 }
 
 RET_VAL evalNumNode(AST_NODE *node)
@@ -765,6 +940,12 @@ RET_VAL evalSymbolNode(AST_NODE *symbol)
             if(strcmp(current->id, symbol->data.symbol.id) == 0)
             {
                 result = eval(current->value);
+                if(current->value->type != NUM_NODE_TYPE)
+                {
+                    current->value->type = NUM_NODE_TYPE;
+                    current->value->data.number = result;
+                }
+
                 if(result.type == DOUBLE_TYPE && current->type == INT_TYPE)
                 {
                     warning("Precision loss on int cast from %lf to %d", result.value, (int)round(result.value));
@@ -792,6 +973,31 @@ RET_VAL evalSymbolNode(AST_NODE *symbol)
 
 }
 
+RET_VAL evalCondNode(AST_NODE *node)
+{
+    RET_VAL result;
+
+    if(!node)
+    {
+        warning("NULL ast node passed into evalCondNode!");
+        return NAN_RET_VAL;
+    }
+    else if(!node->data.conditional.condition || !node->data.conditional.ifFalse || !node->data.conditional.ifTrue)
+    {
+        warning("Not enough expressions in evalCondNode!");
+        return NAN_RET_VAL;
+    }
+    result = eval(node->data.conditional.condition);
+    if(result.value != 0)
+        result.value = node->data.conditional.ifTrue->data.number.value;
+    else
+        result.value = node->data.conditional.ifFalse->data.number.value;
+
+    result.type = INT_TYPE;
+    return result;
+
+}
+
 RET_VAL eval(AST_NODE *node)
 {
     if (!node)
@@ -810,6 +1016,8 @@ RET_VAL eval(AST_NODE *node)
             return eval(node->data.scope.child);
         case SYM_NODE_TYPE:
             return evalSymbolNode(node);
+        case COND_NODE_TYPE:
+            return evalCondNode(node);
         default:
             yyerror("TYPE not recognized!");
             return NAN_RET_VAL;

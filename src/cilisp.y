@@ -16,7 +16,7 @@
 %token <cval> SYMBOL
 %token <ival> FUNC TYPE
 %token <dval> INT DOUBLE
-%token QUIT EOL EOFT LPAREN RPAREN LET
+%token QUIT EOL EOFT LPAREN RPAREN LET COND
 
 %type <astNode> s_expr f_expr s_expr_list s_expr_section number
 %type <symTblNode> let_section let_list let_elem
@@ -63,6 +63,10 @@ s_expr:
     | SYMBOL {
     	ylog(s_expr, SYMBOL);
     	$$ = createSymbolNode($1);
+    }
+    | LPAREN COND s_expr s_expr s_expr RPAREN {
+    	ylog(s_expr, LPAREN COND s_expr s_expr s_expr RPAREN);
+    	$$ = createCondNode($3, $4, $5);
     }
     | LPAREN let_section s_expr RPAREN {
     	ylog(s_expr, LPAREN let_section s_expr RPAREN);
@@ -138,7 +142,7 @@ let_elem:
     }
     | LPAREN SYMBOL s_expr RPAREN {
           ylog(let_elem, LPAREN SYMBOL s_expr RPAREN);
-	  $$ = let_elem(2, $2, $3);
+	  $$ = let_elem(NO_TYPE, $2, $3);
     };
 
 
