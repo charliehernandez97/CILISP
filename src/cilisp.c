@@ -128,7 +128,7 @@ AST_NODE *createNumberNode(double value, NUM_TYPE type)
 }
 
 
-AST_NODE *createFunctionNode(FUNC_TYPE func, AST_NODE *opList)
+AST_NODE *createFunctionNode(char *id, FUNC_TYPE func, AST_NODE *opList)
 {
     AST_NODE *node;
     size_t nodeSize;
@@ -143,6 +143,7 @@ AST_NODE *createFunctionNode(FUNC_TYPE func, AST_NODE *opList)
     // TODO complete the function - done
     // Populate the allocated AST_NODE *node's data
     node->type = FUNC_NODE_TYPE;
+    node->data.function.id = id;
     node->data.function.func = func;
     node->data.function.opList = opList;
     while(opList != NULL)
@@ -159,6 +160,27 @@ AST_NODE *addExpressionToList(AST_NODE *newExpr, AST_NODE *exprList)
 
     newExpr->next = exprList;
     return newExpr;
+}
+
+SYMBOL_TABLE_NODE *addArgToList(char *id, SYMBOL_TABLE_NODE *arg_list)
+{
+    SYMBOL_TABLE_NODE *table;
+
+    size_t nodeSize;
+
+    nodeSize = sizeof(SYMBOL_TABLE_NODE);
+    if ((table = calloc(nodeSize, 1)) == NULL)
+    {
+        yyerror("Memory allocation failed!");
+        exit(1);
+    }
+
+    table->id = id;
+    table->type = NO_TYPE;
+    table->symbolType = ARG_TYPE;
+    table->next = arg_list;
+
+    return table;
 }
 
 AST_NODE *createSymbolNode(char *id)
@@ -256,7 +278,7 @@ SYMBOL_TABLE_NODE *let_list(SYMBOL_TABLE_NODE *let_elem, SYMBOL_TABLE_NODE *let_
 }
 
 // create symbol table node with data
-SYMBOL_TABLE_NODE *let_elem(NUM_TYPE type, char *id, AST_NODE *s_expr)
+SYMBOL_TABLE_NODE *let_elem(NUM_TYPE type, char *id, SYMBOL_TABLE_NODE *arg_list, AST_NODE *s_expr)
 {
     SYMBOL_TABLE_NODE *symbolTableNode;
     size_t nodeSize;
@@ -270,6 +292,7 @@ SYMBOL_TABLE_NODE *let_elem(NUM_TYPE type, char *id, AST_NODE *s_expr)
 
     symbolTableNode->id = id;
     symbolTableNode->value = s_expr;
+    s_expr->symbolTable = arg_list;
     symbolTableNode->type = type;
 
     return symbolTableNode;
@@ -310,6 +333,7 @@ RET_VAL evalAbs(AST_NODE *node)
 
     }
     RET_VAL result;
+    result.value = 0, result.type = INT_TYPE;
     result = eval(node);
     result.value = fabs(result.value);
     result.type = result.type;
@@ -320,7 +344,9 @@ RET_VAL evalAdd(AST_NODE *node)
 {
     RET_VAL result;
     RET_VAL result2;
-    result.value = 0;
+
+    result.value = 0, result.type = INT_TYPE;
+    result2.value = 1, result2.type = INT_TYPE;
 
     if(node == NULL)
     {
@@ -351,6 +377,9 @@ RET_VAL evalSub(AST_NODE *node)
 {
     RET_VAL result;
     RET_VAL result2;
+
+    result.value = 0, result.type = INT_TYPE;
+    result2.value = 1, result2.type = INT_TYPE;
     if(!node)
     {
         warning("No operands in Sub function");
@@ -385,7 +414,9 @@ RET_VAL evalMult(AST_NODE *node)
     RET_VAL result;
     RET_VAL result2;
 
-    result.value = 1;
+    result.value = 1, result.type = INT_TYPE;
+    result2.value = 1, result2.type = INT_TYPE;
+
 
     if(node == NULL)
     {
@@ -394,7 +425,6 @@ RET_VAL evalMult(AST_NODE *node)
         return result;
     }
 
-    //result->type = node->data.number.type || node->next->data.number.type;
     while(node != NULL)
     {
         result2 = eval(node);
@@ -404,10 +434,8 @@ RET_VAL evalMult(AST_NODE *node)
             result.type = DOUBLE_TYPE;
         else
             result.type = INT_TYPE;
-        //printf("add %f", node->data.number.value);
         node = node->next;
 
-        //printf("add %f", node->data.number.value);
     }
 
     return result;
@@ -417,6 +445,9 @@ RET_VAL evalDiv(AST_NODE *node)
 {
     RET_VAL result;
     RET_VAL result2;
+
+    result.value = 1, result.type = INT_TYPE;
+    result2.value = 1, result2.type = INT_TYPE;
 
     if(!node)
     {
@@ -464,6 +495,9 @@ RET_VAL evalRemainder(AST_NODE *node)
     RET_VAL result;
     RET_VAL result2;
 
+    result.value = 1, result.type = INT_TYPE;
+    result2.value = 1, result2.type = INT_TYPE;
+
     if(!node)
     {
         warning("No operands in remainder function");
@@ -506,6 +540,7 @@ RET_VAL evalExp(AST_NODE *node)
     }
 
     RET_VAL result;
+    result.value = 1, result.type = INT_TYPE;
     result = eval(node);
     result.value = exp(result.value);
     result.type = DOUBLE_TYPE;
@@ -526,6 +561,7 @@ RET_VAL evalExp2(AST_NODE *node)
     }
 
     RET_VAL result;
+    result.value = 1, result.type = INT_TYPE;
     result = eval(node);
     result.value = exp2(result.value);
     if (node->data.number.value < 0)
@@ -540,6 +576,8 @@ RET_VAL evalPow(AST_NODE *node)
     RET_VAL result;
     RET_VAL result2;
 
+    result.value = 1, result.type = INT_TYPE;
+    result2.value = 1, result2.type = INT_TYPE;
 
     if(!node)
     {
@@ -567,6 +605,7 @@ RET_VAL evalPow(AST_NODE *node)
 RET_VAL evalLog(AST_NODE *node)
 {
     RET_VAL result;
+    result.value = 1, result.type = INT_TYPE;
 
     if(!node)
     {
@@ -587,6 +626,7 @@ RET_VAL evalLog(AST_NODE *node)
 RET_VAL evalSqrt(AST_NODE *node)
 {
     RET_VAL result;
+    result.value = 1, result.type = INT_TYPE;
 
     if(!node)
     {
@@ -608,6 +648,8 @@ RET_VAL evalSqrt(AST_NODE *node)
 RET_VAL evalCbrt(AST_NODE *node)
 {
     RET_VAL result;
+    result.value = 1, result.type = INT_TYPE;
+
     if(!node)
     {
         warning("No operands in Cbrt function");
@@ -712,12 +754,13 @@ RET_VAL evalRand()
     return result;
 }
 
+// TODO
 RET_VAL evalRead()
 {
-//    RET_VAL result;
-//    printf("read :: ");
-//    //scanf("%lf", result.value);
-//    //return result;
+    RET_VAL result;
+    printf("read :: ");
+    //fscanf(stdout, "%lf", result.value);
+    return result;
 }
 
 RET_VAL evalEqual(AST_NODE *node)
@@ -1049,7 +1092,10 @@ void freeFunctionNode(AST_NODE *function)
     freeNode(function->data.function.opList);
 }
 
-
+void freeSymbolTableNode(AST_NODE *symbol)
+{
+    freeNode(symbol->symbolTable->value);
+}
 
 // TODO - DEBUGGING
 void freeNode(AST_NODE *node)
@@ -1062,24 +1108,14 @@ void freeNode(AST_NODE *node)
     if(node->type == FUNC_NODE_TYPE){
         freeFunctionNode(node);
     }
+//    if(node->type == SYM_NODE_TYPE){
+//        freeSymbolTableNode(node);
+//    }
     freeNode(node->next);
     free(node);
-    // TODO complete the function
-    // look through the AST_NODE struct, decide what
-    // referenced data should have freeNode called on it
-    // (hint: it might be part of an s_expr_list, with more
-    // nodes following it in the list)
 
-    // if this node is FUNC_TYPE, it might have some operands
-    // to free as well (but this should probably be done in
-    // a call to another function, named something like
-    // freeFunctionNode)
 
-    // and, finally,
 
 }
 
-void freeSymbolTableNode(AST_NODE *node)
-{
 
-}

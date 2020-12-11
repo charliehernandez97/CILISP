@@ -16,6 +16,7 @@ quit    "quit"
 let     "let"
 type    "int"|"double"
 cond    "cond"
+lambda  "lambda"
 
 func    "neg"|"abs"|"exp"|"log"|"sqrt"|"add"|"sub"|"mult"|"div"|"remainder"|"exp"|"exp2"|"pow"|"log"|"sqrt"|"cbrt"|"hypot"|"max"|"min"|"rand"|"read"|"equal"|"less"|"greater"|"print"
 symbol  {letter}({letter}|{digit})*
@@ -44,6 +45,11 @@ symbol  {letter}({letter}|{digit})*
     return QUIT;
 }
 
+{lambda} {
+    llog(LAMBDA);
+    return LAMBDA;
+}
+
 {cond} {
     llog(COND);
     return COND;
@@ -65,7 +71,7 @@ symbol  {letter}({letter}|{digit})*
 
 {symbol} {
     llog(SYMBOL);
-    yylval.cval = (char *) malloc(strlen(yytext)*sizeof(char));
+    yylval.cval = (char *) malloc((strlen(yytext) + 1) *sizeof(char));
     strcpy(yylval.cval, yytext);
     return SYMBOL;
 }

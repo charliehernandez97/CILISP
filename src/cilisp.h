@@ -67,6 +67,12 @@ typedef enum num_type {
     NO_TYPE
 } NUM_TYPE;
 
+typedef enum {
+    VAR_TYPE,
+    LAMBDA_TYPE,
+    ARG_TYPE
+} SYMBOL_TYPE;
+
 NUM_TYPE resolveType(char *);
 
 typedef struct {
@@ -78,6 +84,7 @@ typedef AST_NUMBER RET_VAL;
 
 
 typedef struct ast_function {
+    char *id;
     FUNC_TYPE func;
     struct ast_node *opList;
 } AST_FUNCTION;
@@ -123,18 +130,26 @@ typedef struct symbol_table_node {
     char *id;
     NUM_TYPE type;
     AST_NODE *value;
+    SYMBOL_TYPE symbolType;
+    struct stack_node *stack;
     struct symbol_table_node *next;
 } SYMBOL_TABLE_NODE;
 
+typedef struct stack_node {
+    RET_VAL value;
+    struct stack_node *next;
+} STACK_NODE;
+
 
 AST_NODE *createNumberNode(double value, NUM_TYPE type);
-AST_NODE *createFunctionNode(FUNC_TYPE func, AST_NODE *opList);
+AST_NODE *createFunctionNode(char *id, FUNC_TYPE func, AST_NODE *opList);
 AST_NODE *createSymbolNode(char *id);
 AST_NODE *createScopeNode(SYMBOL_TABLE_NODE *tableNode, AST_NODE *node);
 AST_NODE *createCondNode(AST_NODE *condition, AST_NODE *trueValue, AST_NODE *falseValue);
 SYMBOL_TABLE_NODE *let_list(SYMBOL_TABLE_NODE *let_elem, SYMBOL_TABLE_NODE *let_list);
-SYMBOL_TABLE_NODE *let_elem(NUM_TYPE type, char *id, AST_NODE *s_expr);
+SYMBOL_TABLE_NODE *let_elem(NUM_TYPE type, char *id, SYMBOL_TABLE_NODE *arg_list, AST_NODE *s_expr);
 AST_NODE *addExpressionToList(AST_NODE *newExpr, AST_NODE *exprList);
+SYMBOL_TABLE_NODE *addArgToList(char *id, SYMBOL_TABLE_NODE *arg_list);
 RET_VAL eval(AST_NODE *node);
 
 void printRetVal(RET_VAL val);

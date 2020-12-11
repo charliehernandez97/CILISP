@@ -16,10 +16,10 @@
 %token <cval> SYMBOL
 %token <ival> FUNC TYPE
 %token <dval> INT DOUBLE
-%token QUIT EOL EOFT LPAREN RPAREN LET COND
+%token QUIT EOL EOFT LPAREN RPAREN LET COND LAMBDA
 
 %type <astNode> s_expr f_expr s_expr_list s_expr_section number
-%type <symTblNode> let_section let_list let_elem
+%type <symTblNode> let_section let_list let_elem arg_list
 
 
 %%
@@ -87,8 +87,22 @@ s_expr:
 f_expr:
     LPAREN FUNC s_expr_section RPAREN {
 	ylog(f_expr, LPAREN FUNC s_expr_section RPAREN);
-	$$ = createFunctionNode($2, $3);
+	$$ = createFunctionNode(NULL, $2, $3);
+    }
+    | LPAREN SYMBOL s_expr_section RPAREN {
+	ylog(f_expr, LPAREN SYMBOL s_expr_section RPAREN);
+        $$ = createFunctionNode($2, CUSTOM_FUNC, $3);
     };
+
+arg_list:
+   SYMBOL {
+   	ylog(arg_list, SYMBOL);
+   	$$ = addArgToList($1, NULL);
+   }
+   | SYMBOL arg_list {
+   	ylog(arg_list, SYMBOL arg_list)
+   	$$ = addArgToList($1, $2);
+   }
 
 s_expr_section:
     s_expr_list {
@@ -138,12 +152,20 @@ let_list:
 let_elem:
     LPAREN TYPE SYMBOL s_expr RPAREN {
     	ylog(let_elem, LPAREN TYPE SYMBOL s_expr RPAREN);
-    	$$ = let_elem($2, $3, $4);
+    	$$ = let_elem($2, $3, NULL, $4);
     }
     | LPAREN SYMBOL s_expr RPAREN {
           ylog(let_elem, LPAREN SYMBOL s_expr RPAREN);
-	  $$ = let_elem(NO_TYPE, $2, $3);
-    };
+	  $$ = let_elem(NO_TYPE, $2, NULL, $3);
+    }
+    | LPAREN SYMBOL LAMBDA LPAREN arg_list RPAREN s_expr RPAREN {
+    	ylog(let_elem, LPAREN SYMBOL LAMBDA LPAREN arg_list RPAREN s_expr RPAREN);
+    	$$ = let_elem(NO_TYPE, $2, $5, $7);
+    }
+    | LPAREN TYPE SYMBOL LAMBDA LPAREN arg_list RPAREN s_expr RPAREN {
+    	ylog(let_elem, LPAREN TYPE SYMBOL LAMBDA LPAREN arg_list RPAREN s_expr RPAREN);
+    	$$ = let_elem(TYPE, $3, $6, $8);
+    }
 
 
 
