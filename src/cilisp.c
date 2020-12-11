@@ -128,7 +128,7 @@ AST_NODE *createNumberNode(double value, NUM_TYPE type)
 }
 
 
-AST_NODE *createFunctionNode(char *id, FUNC_TYPE func, AST_NODE *opList)
+AST_NODE *createFunctionNode(FUNC_TYPE func, AST_NODE *opList)
 {
     AST_NODE *node;
     size_t nodeSize;
@@ -143,8 +143,33 @@ AST_NODE *createFunctionNode(char *id, FUNC_TYPE func, AST_NODE *opList)
     // TODO complete the function - done
     // Populate the allocated AST_NODE *node's data
     node->type = FUNC_NODE_TYPE;
-    node->data.function.id = id;
     node->data.function.func = func;
+    node->data.function.opList = opList;
+    while(opList != NULL)
+    {
+        opList->parent = node;
+        opList = opList->next;
+    }
+
+    return node;
+}
+
+AST_NODE *createCustomFunctionNode(char *id, AST_NODE *opList)
+{
+    AST_NODE *node;
+    size_t nodeSize;
+
+    nodeSize = sizeof(AST_NODE);
+    if ((node = calloc(nodeSize, 1)) == NULL)
+    {
+        yyerror("Memory allocation failed!");
+        exit(1);
+    }
+
+    // TODO complete the function - done
+    // Populate the allocated AST_NODE *node's data
+    node->type = FUNC_NODE_TYPE;
+    node->data.function.func = CUSTOM_FUNC;
     node->data.function.opList = opList;
     while(opList != NULL)
     {
@@ -160,27 +185,6 @@ AST_NODE *addExpressionToList(AST_NODE *newExpr, AST_NODE *exprList)
 
     newExpr->next = exprList;
     return newExpr;
-}
-
-SYMBOL_TABLE_NODE *addArgToList(char *id, SYMBOL_TABLE_NODE *arg_list)
-{
-    SYMBOL_TABLE_NODE *table;
-
-    size_t nodeSize;
-
-    nodeSize = sizeof(SYMBOL_TABLE_NODE);
-    if ((table = calloc(nodeSize, 1)) == NULL)
-    {
-        yyerror("Memory allocation failed!");
-        exit(1);
-    }
-
-    table->id = id;
-    table->type = NO_TYPE;
-    table->symbolType = ARG_TYPE;
-    table->next = arg_list;
-
-    return table;
 }
 
 AST_NODE *createSymbolNode(char *id)
@@ -278,7 +282,27 @@ SYMBOL_TABLE_NODE *let_list(SYMBOL_TABLE_NODE *let_elem, SYMBOL_TABLE_NODE *let_
 }
 
 // create symbol table node with data
-SYMBOL_TABLE_NODE *let_elem(NUM_TYPE type, char *id, SYMBOL_TABLE_NODE *arg_list, AST_NODE *s_expr)
+SYMBOL_TABLE_NODE *createVariableTableNode(NUM_TYPE type, char *id, AST_NODE *s_expr)
+{
+    SYMBOL_TABLE_NODE *symbolTableNode;
+    size_t nodeSize;
+
+    nodeSize = sizeof(SYMBOL_TABLE_NODE);
+    if ((symbolTableNode = calloc(nodeSize, 1)) == NULL)
+    {
+        yyerror("Memory allocation failed!");
+        exit(1);
+    }
+
+    symbolTableNode->id = id;
+    symbolTableNode->value = s_expr;
+    symbolTableNode->type = type;
+    symbolTableNode->symbolType = VAR_TYPE;
+
+    return symbolTableNode;
+}
+
+SYMBOL_TABLE_NODE *createFunctionTableNode( NUM_TYPE type, char *id, SYMBOL_TABLE_NODE *arg_list, AST_NODE *s_expr)
 {
     SYMBOL_TABLE_NODE *symbolTableNode;
     size_t nodeSize;
@@ -294,10 +318,31 @@ SYMBOL_TABLE_NODE *let_elem(NUM_TYPE type, char *id, SYMBOL_TABLE_NODE *arg_list
     symbolTableNode->value = s_expr;
     s_expr->symbolTable = arg_list;
     symbolTableNode->type = type;
+    symbolTableNode->symbolType = LAMBDA_TYPE;
 
     return symbolTableNode;
 }
 
+SYMBOL_TABLE_NODE *createArgTable(char *id, SYMBOL_TABLE_NODE *arg_list)
+{
+    SYMBOL_TABLE_NODE *table;
+
+    size_t nodeSize;
+
+    nodeSize = sizeof(SYMBOL_TABLE_NODE);
+    if ((table = calloc(nodeSize, 1)) == NULL)
+    {
+        yyerror("Memory allocation failed!");
+        exit(1);
+    }
+
+    table->id = id;
+    table->type = NO_TYPE;
+    table->symbolType = ARG_TYPE;
+    table->next = arg_list;
+
+    return table;
+}
 
 RET_VAL evalNeg(AST_NODE *node)
 {
@@ -759,7 +804,21 @@ RET_VAL evalRead()
 {
     RET_VAL result;
     printf("read :: ");
-    //fscanf(stdout, "%lf", result.value);
+    if(read_target == 0)
+    {
+        double value;
+        scanf("%lf", &value);
+        result.type = DOUBLE_TYPE;
+        result.value = value;
+    }
+    else
+    {
+        double value;
+        fscanf(read_target,"%lf", &value);
+        result.type = DOUBLE_TYPE;
+        result.value = value;
+    }
+
     return result;
 }
 
@@ -861,6 +920,42 @@ RET_VAL evalPrint(AST_NODE *node)
     printRetVal(result);
     return result;
 }
+// TODO
+RET_VAL evalCustomFunction(AST_NODE *node)
+{
+//    RET_VAL result;
+//    STACK_NODE *stack;
+//    AST_NODE *functionNode;
+//
+//    if(!node)
+//    {
+//        warning("No operands detected!");
+//        return NAN_RET_VAL;
+//    }
+//
+//    functionNode = node->parent;
+//
+//    while(node != NULL)
+//    {
+//        result = eval(node);
+//        stack->value = result;
+//        stack = stack->next;
+//        node = node->next;
+//    }
+//
+//    while(functionNode->data.scope.child->symbolTable != NULL)
+//    {
+//        functionNode->data.scope.child->symbolTable->stack = stack;
+//        functionNode->data.scope.child->symbolTable = functionNode->data.scope.child->symbolTable->next;
+//        stack = stack->next;
+//    }
+//
+//    stack->next = NULL;
+//
+//
+//    return result;
+
+}
 
 RET_VAL evalFuncNode(AST_NODE *node)
 {
@@ -943,6 +1038,8 @@ RET_VAL evalFuncNode(AST_NODE *node)
         case PRINT:
             result = evalPrint(node->data.function.opList);
             break;
+        case CUSTOM_FUNC:
+            result = evalCustomFunction(node->data.function.opList);
         default:
             warning("WARNING: Function not recognized!");
 

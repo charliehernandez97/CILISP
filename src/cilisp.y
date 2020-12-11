@@ -87,21 +87,41 @@ s_expr:
 f_expr:
     LPAREN FUNC s_expr_section RPAREN {
 	ylog(f_expr, LPAREN FUNC s_expr_section RPAREN);
-	$$ = createFunctionNode(NULL, $2, $3);
+	$$ = createFunctionNode($2, $3);
     }
     | LPAREN SYMBOL s_expr_section RPAREN {
 	ylog(f_expr, LPAREN SYMBOL s_expr_section RPAREN);
-        $$ = createFunctionNode($2, CUSTOM_FUNC, $3);
+        $$ = createCustomFunctionNode($2, $3);
     };
 
+//arg_section:
+//   LPAREN arg_list RPAREN {
+//   	ylog(arg_section, LPAREN arg_list RPAREN);
+//   	$$ = $2;
+//   };
+//
+//arg_list:
+//   arg_elem {
+//   	ylog(arg_list, arg_elem);
+//   	$$ = createArgTable($1, NULL);
+//   }
+//   | arg_elem arg_list {
+//   	ylog(arg_list, arg_elem arg_list)
+//   	$$ = createArgTable($1, $2);
+//   };
+//
+//arg_elem:
+//   SYMBOL {
+//
+//   }
 arg_list:
    SYMBOL {
    	ylog(arg_list, SYMBOL);
-   	$$ = addArgToList($1, NULL);
+   	$$ = createArgTable($1, NULL);
    }
    | SYMBOL arg_list {
    	ylog(arg_list, SYMBOL arg_list)
-   	$$ = addArgToList($1, $2);
+   	$$ = createArgTable($1, $2);
    }
 
 s_expr_section:
@@ -152,20 +172,24 @@ let_list:
 let_elem:
     LPAREN TYPE SYMBOL s_expr RPAREN {
     	ylog(let_elem, LPAREN TYPE SYMBOL s_expr RPAREN);
-    	$$ = let_elem($2, $3, NULL, $4);
+    	$$ = createVariableTableNode($2, $3, $4);
     }
     | LPAREN SYMBOL s_expr RPAREN {
           ylog(let_elem, LPAREN SYMBOL s_expr RPAREN);
-	  $$ = let_elem(NO_TYPE, $2, NULL, $3);
+	  $$ = createVariableTableNode(NO_TYPE, $2, $3);
     }
     | LPAREN SYMBOL LAMBDA LPAREN arg_list RPAREN s_expr RPAREN {
     	ylog(let_elem, LPAREN SYMBOL LAMBDA LPAREN arg_list RPAREN s_expr RPAREN);
-    	$$ = let_elem(NO_TYPE, $2, $5, $7);
+    	$$ = createFunctionTableNode(NO_TYPE, $2, $5, $7);
     }
     | LPAREN TYPE SYMBOL LAMBDA LPAREN arg_list RPAREN s_expr RPAREN {
     	ylog(let_elem, LPAREN TYPE SYMBOL LAMBDA LPAREN arg_list RPAREN s_expr RPAREN);
-    	$$ = let_elem(TYPE, $3, $6, $8);
+    	$$ = createFunctionTableNode($2, $3, $6, $8);
     }
+    | LPAREN SYMBOL LAMBDA LPAREN RPAREN s_expr RPAREN {
+        ylog(let_elem, LPAREN SYMBOL LAMBDA LPAREN RPAREN s_expr RPAREN);
+       	$$ = createFunctionTableNode(NO_TYPE, $2, NULL, $6);
+    };
 
 
 
