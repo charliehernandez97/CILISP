@@ -509,13 +509,15 @@ RET_VAL evalDiv(AST_NODE *node)
         warning("Sub called with extra (ignored) operands!");
     }
 
-    if(node->next->data.number.value == 0)
+    result = eval(node);
+    result2 = eval(node->next);
+
+    if(result2.value == 0)
     {
         warning("You cannot divide by zero!");
         return NAN_RET_VAL;
     }
-    result = eval(node);
-    result2 = eval(node->next);
+
     if(result.type == INT_TYPE && result2.type == INT_TYPE)
     {
         if(remainder(result.value, result2.value) != 0)

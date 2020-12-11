@@ -1,0 +1,12 @@
+NOT DONE
+----------------------------------------
+1. Task 5 is not fully implemented. Grammar is parsed correctly but the logic for custom functions is missing
+2. Read is not fully implemented, does not check for errors
+3. FreeNode() is incomplete, still get a couple of memory leaks
+
+KNOWN ISSUES
+----------------------------------------
+1. On rare occassions, sometimes multiplying (or any other operation) a list of numbers returns the wrong
+number type if the list of numbers contains both doubles and integers
+2. Read() does not check for errors, so giving it an invalid input would result in the wrong result being outputted
+3. COND is unable to read local variables, i.e (cond x y z)
