@@ -12,3 +12,4 @@ not able to hold onto a specific NUM_TYPE due to the list of different types
 2. Read() does not check for errors, so giving it an invalid input would result in the wrong result being outputted
 3. COND is unable to read local variables, i.e (cond x y z). This may be because of the cond node being separate from the
 scope node (?) or not making the proper connections during scoping
+4. LAMBDA implementation missing, results in errors
