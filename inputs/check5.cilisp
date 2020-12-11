@@ -6,6 +6,7 @@
 ((let (double number (add 35 67))) (mult number 5))
 ((let (x 1)) (sub ((let (x 2) (y 3)) (add x y)) x))
 ( ( let (x (read)) (y (read)) ) (add (print (mult x y)) (print (add x y)) (print (sub x y)) (print (div x y))) )
+(read)
 (cond (max 1 0) 1 2)
 (equal (add 45 77) (cond 0 5 122))
 ( (let (x lambda (y) (print y))) (x 5) )
