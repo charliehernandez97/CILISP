@@ -1,3 +1,8 @@
+WHAT IS DONE
+---------------------------------------
+1. Tasks 1-3 is done along with all it's functionality, except for freeNode()
+2. Task 4 is mostly done
+
 NOT DONE
 ----------------------------------------
 1. Task 5 is not fully implemented. Grammar is parsed correctly but the logic for custom functions is missing
