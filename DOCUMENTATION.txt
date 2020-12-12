@@ -15,7 +15,9 @@ KNOWN ISSUES
 number type if the list of numbers contains both doubles and integers. This may be because the code is
 not able to hold onto a specific NUM_TYPE due to the list of different types
 2. Read() does not check for errors, so giving it an invalid input would result in the wrong result being outputted
-3. When reading from a file, Read() stores the data correctly but does not output it. However, overall output is mostly correct
+3. When reading from a file, Read() stores the data correctly but does not output it. However, overall output is 
+mostly correct
 4. COND is unable to read local variables, i.e (cond x y z). This may be because of the cond node being separate from the
 scope node (?) or not making the proper connections during scoping
 5. LAMBDA implementation missing, results in errors
+6. Memory leaks
