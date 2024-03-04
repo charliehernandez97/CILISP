@@ -1,29 +1,10 @@
 # CI LISP
 
-Read **everything in this file** before opening the instructions for the individual tasks. You are responsible for understanding the grading structure before starting, and you will likely miss **tons of points** in progress checks if you do not.
-
 ## Summary
 
-Through the course of this project, you will implement an interpreter for *CI LISP*, a *Lisp*-like language.
+Implementation of an interpreter for *CI LISP*, a *Lisp*-like language.
 
 The project is divided into tasks, which should be done sequentially and are listed in the [Instructions](#instructions) section below.
-
-## Progress Checks
-
-We will do 10-minute one-on-one progress checks on the  dates listed below. The expected amount of progress in the project is listed for each progress check. Students making insufficient progress on a given progress check can be docked up to 12.5% on the project; students who miss progress checks will be docked the full 12.5%. Up to half of the lost points on a progress check can be recovered on the following progress check by catching back up. 
-
-You will be graded from -12.5 to 0 on each progress check, and the progress check grades will be added into your final grade. Points will not be docked on the final progress check unless it is missed; anything that is not complete at the final check will be reflected in the project grade itself.
-
-You will not necessarily be docked any points for not reaching the expected progress goals. If the expected tasks are near completion **and** you come prepared with questions and/or an organized plan detailing what you have left to do to reach the progress goals, you may receive full credit.
-
-Whether you have reached the progress goals or not, you must come prepared with a summary of your progress. Moreover, your project github repository must be up to date with your project and include sample inputs demonstrating all implemented functionality (including functionality from prior progress checks). We will clone your project and run it with your inputs to verify. Students who meet progress goals but do not come prepared to show it will be docked points.
-
-Tasks **must** be completed in order. A progress goal that states "Complete task N" really means "Complete tasks 1-N".
-
-* `11/09` : Complete task 1.
-* `11/18` : Complete task 2.
-* `11/30` : Complete task 4.
-* `12/11` : Complete the project.
 
 ## Submission Requirements
 
